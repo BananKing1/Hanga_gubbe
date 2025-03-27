@@ -26,7 +26,7 @@ def new_game():
     word = random.choice(words).upper()
     guessed_letters = set()
     correct_letters = set(word)
-    attempts = 6
+    attempts = 16
     update_display()
 
 def guess_letter():
