@@ -1,4 +1,6 @@
 import random
+import tkinter as tk
+from tkinter import messagebox
 
 def load_words(filename):
     """Läser in ord från en fil och returnerar en lista."""
@@ -7,7 +9,7 @@ def load_words(filename):
             words = [line.strip() for line in file.readlines()]
         return words
     except FileNotFoundError:
-        print("Filen med ord hittades inte.")
+        messagebox.showerror("Fel", "Filen med ord hittades inte.")
         return []
 
 def save_score(score, filename="score.txt"):
@@ -15,7 +17,8 @@ def save_score(score, filename="score.txt"):
     with open(filename, 'a', encoding='utf-8') as file:
         file.write(f"{score}\n")
 
-def hangman():
+def new_game():
+    global word, guessed_letters, correct_letters, attempts
     words = load_words("words.txt")
     if not words:
         return
@@ -24,37 +27,62 @@ def hangman():
     guessed_letters = set()
     correct_letters = set(word)
     attempts = 6
-    
-    print("Välkommen till Hänga Gubbe!")
-    
-    while attempts > 0 and correct_letters:
-        print("\n" + " ".join(letter if letter in guessed_letters else "_" for letter in word))
-        print(f"Felaktiga gissningar: {attempts} kvar")
-        guess = input("Gissa en bokstav: ").upper()
-        
-        if len(guess) != 1 or not guess.isalpha():
-            print("Felaktig inmatning, gissa en enda bokstav.")
-            continue
-        
-        if guess in guessed_letters:
-            print("Du har redan gissat den bokstaven.")
-            continue
-        
-        guessed_letters.add(guess)
-        
-        if guess in correct_letters:
-            correct_letters.remove(guess)
-            print("Rätt gissning!")
-        else:
-            attempts -= 1
-            print("Fel gissning!")
-    
-    if not correct_letters:
-        print(f"Grattis! Du gissade ordet: {word}")
-        save_score(1)
-    else:
-        print(f"Game Over! Ordet var: {word}")
-        save_score(0)
+    update_display()
 
-if __name__ == "__main__":
-    hangman()
+def guess_letter():
+    global attempts
+    letter = entry.get().upper()
+    entry.delete(0, tk.END)
+    
+    if len(letter) != 1 or not letter.isalpha():
+        messagebox.showwarning("Fel", "Ange en enda bokstav.")
+        return
+    
+    if letter in guessed_letters:
+        messagebox.showinfo("Info", "Du har redan gissat den bokstaven.")
+        return
+    
+    guessed_letters.add(letter)
+    
+    if letter in correct_letters:
+        correct_letters.remove(letter)
+    else:
+        attempts -= 1
+    
+    update_display()
+    check_game_over()
+
+def update_display():
+    word_display.config(text=" ".join(letter if letter in guessed_letters else "_" for letter in word))
+    attempts_label.config(text=f"Försök kvar: {attempts}")
+
+def check_game_over():
+    if not correct_letters:
+        messagebox.showinfo("Grattis!", f"Du vann! Ordet var: {word}")
+        save_score(1)
+        new_game()
+    elif attempts == 0:
+        messagebox.showinfo("Game Over", f"Du förlorade! Ordet var: {word}")
+        save_score(0)
+        new_game()
+
+root = tk.Tk()
+root.title("Hänga Gubbe")
+
+word_display = tk.Label(root, text="", font=("Arial", 20))
+word_display.pack(pady=20)
+
+entry = tk.Entry(root, font=("Arial", 14))
+entry.pack()
+
+guess_button = tk.Button(root, text="Gissa", command=guess_letter)
+guess_button.pack(pady=10)
+
+attempts_label = tk.Label(root, text="", font=("Arial", 14))
+attempts_label.pack()
+
+new_game_button = tk.Button(root, text="Nytt spel", command=new_game)
+new_game_button.pack(pady=10)
+
+new_game()
+root.mainloop()
