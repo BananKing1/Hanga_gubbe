@@ -55,6 +55,10 @@ def guess_letter():
 def update_display():
     word_display.config(text=" ".join(letter if letter in guessed_letters else "_" for letter in word))
     attempts_label.config(text=f"Försök kvar: {attempts}")
+    update_hangman_image()
+
+def update_hangman_image():
+    hangman_image.config(image=hangman_images[6 - attempts])
 
 def check_game_over():
     if not correct_letters:
@@ -68,6 +72,10 @@ def check_game_over():
 
 root = tk.Tk()
 root.title("Hänga Gubbe")
+
+hangman_images = [tk.PhotoImage(file=f"hangman{i}.png") for i in range(7)]
+hangman_image = tk.Label(root)
+hangman_image.pack()
 
 word_display = tk.Label(root, text="", font=("Arial", 20))
 word_display.pack(pady=20)
