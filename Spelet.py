@@ -58,7 +58,7 @@ def update_display():
     update_hangman_image()
 
 def update_hangman_image():
-    hangman_image.config(image=hangman_images[6 - attempts])
+    hangman_image.config(image=hangman_images[min(16 - attempts, len(hangman_images) - 1)])
 
 def check_game_over():
     if not correct_letters:
@@ -70,12 +70,19 @@ def check_game_over():
         save_score(0)
         new_game()
 
+def update_hangman_image():
+    scaled_image = hangman_images[min(16 - attempts, len(hangman_images) - 1)].subsample(2, 2)  # Adjust scaling factor as needed
+    hangman_image.config(image=scaled_image)
+    hangman_image.image = scaled_image  # Keep a reference to prevent garbage collection
+
+
 root = tk.Tk()
 root.title("Hänga Gubbe")
 
-hangman_images = [tk.PhotoImage(file=f"hangman{i}.png") for i in range(7)]
+hangman_images = [tk.PhotoImage(file=f"hangman{i}.png").subsample(2, 2) for i in range(17)]
 hangman_image = tk.Label(root)
 hangman_image.pack()
+
 
 word_display = tk.Label(root, text="", font=("Arial", 20))
 word_display.pack(pady=20)
