@@ -83,6 +83,8 @@ hangman_images = [tk.PhotoImage(file=f"hangman{i}.png").subsample(2, 2) for i in
 hangman_image = tk.Label(root)
 hangman_image.pack()
 
+wrong_letters_display = tk.Label(root, text="Fel gissningar: ", font=("Arial", 14))
+wrong_letters_display.pack()
 
 word_display = tk.Label(root, text="", font=("Arial", 20))
 word_display.pack(pady=20)
