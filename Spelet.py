@@ -2,104 +2,133 @@ import random
 import tkinter as tk
 from tkinter import messagebox
 
-def load_words(filename):
-    """Läser in ord från en fil och returnerar en lista."""
-    try:
-        with open(filename, 'r', encoding='utf-8') as file:
-            words = [line.strip() for line in file.readlines()]
-        return words
-    except FileNotFoundError:
-        messagebox.showerror("Fel", "Filen med ord hittades inte.")
-        return []
 
-def save_score(score, filename="score.txt"):
-    """Sparar spelarens poäng i en fil."""
-    with open(filename, 'a', encoding='utf-8') as file:
-        file.write(f"{score}\n")
+class HangmanGame:
+    def __init__(self, word_file="words.txt", score_file="score.txt"):
+        self.word_file = word_file
+        self.score_file = score_file
+        self.reset_game()
 
-def new_game():
-    global word, guessed_letters, correct_letters, attempts
-    words = load_words("words.txt")
-    if not words:
-        return
-    
-    word = random.choice(words).upper()
-    guessed_letters = set()
-    correct_letters = set(word)
-    attempts = 16
-    update_display()
+    def load_words(self):
+        try:
+            with open(self.word_file, 'r', encoding='utf-8') as file:
+                return [line.strip().upper() for line in file.readlines()]
+        except FileNotFoundError:
+            messagebox.showerror("Fel", "Filen med ord hittades inte.")
+            return []
 
-def guess_letter():
-    global attempts
-    letter = entry.get().upper()
-    entry.delete(0, tk.END)
-    
-    if len(letter) != 1 or not letter.isalpha():
-        messagebox.showwarning("Fel", "Ange en enda bokstav.")
-        return
-    
-    if letter in guessed_letters:
-        messagebox.showinfo("Info", "Du har redan gissat den bokstaven.")
-        return
-    
-    guessed_letters.add(letter)
-    
-    if letter in correct_letters:
-        correct_letters.remove(letter)
-    else:
-        attempts -= 1
-    
-    update_display()
-    check_game_over()
+    def save_score(self, score):
+        with open(self.score_file, 'a', encoding='utf-8') as file:
+            file.write(f"{score}\n")
 
-def update_display():
-    word_display.config(text=" ".join(letter if letter in guessed_letters else "_" for letter in word))
-    attempts_label.config(text=f"Försök kvar: {attempts}")
-    update_hangman_image()
+    def reset_game(self):
+        words = self.load_words()
+        if not words:
+            self.word = ""
+            return False
+        self.word = random.choice(words)
+        self.guessed_letters = set()
+        self.correct_letters = set(self.word)
+        self.attempts = 16
+        return True
 
-def update_hangman_image():
-    hangman_image.config(image=hangman_images[min(16 - attempts, len(hangman_images) - 1)])
+    def guess(self, letter):
+        letter = letter.upper()
+        if len(letter) != 1 or not letter.isalpha():
+            return "Fel format"
+        if letter in self.guessed_letters:
+            return "Redan gissat"
 
-def check_game_over():
-    if not correct_letters:
-        messagebox.showinfo("Grattis!", f"Du vann! Ordet var: {word}")
-        save_score(1)
-        new_game()
-    elif attempts == 0:
-        messagebox.showinfo("Game Over", f"Du förlorade! Ordet var: {word}")
-        save_score(0)
-        new_game()
+        self.guessed_letters.add(letter)
+        if letter in self.correct_letters:
+            self.correct_letters.remove(letter)
+            return "Rätt"
+        else:
+            self.attempts -= 1
+            return "Fel"
 
-def update_hangman_image():
-    scaled_image = hangman_images[min(16 - attempts, len(hangman_images) - 1)].subsample(2, 2)  # Adjust scaling factor as needed
-    hangman_image.config(image=scaled_image)
-    hangman_image.image = scaled_image  # Keep a reference to prevent garbage collection
+    def is_won(self):
+        return not self.correct_letters
+
+    def is_lost(self):
+        return self.attempts <= 0
+
+    def get_display_word(self):
+        return " ".join(letter if letter in self.guessed_letters else "_" for letter in self.word)
 
 
-root = tk.Tk()
-root.title("Hänga Gubbe")
+class HangmanGUI:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Hänga Gubbe")
 
-hangman_images = [tk.PhotoImage(file=f"hangman{i}.png").subsample(2, 2) for i in range(17)]
-hangman_image = tk.Label(root)
-hangman_image.pack()
+        self.game = HangmanGame()
+        self.hangman_images = [
+            tk.PhotoImage(file=f"hangman{i}.png").subsample(2, 2) for i in range(17)
+        ]
 
-wrong_letters_display = tk.Label(root, text="Fel gissningar: ", font=("Arial", 14))
-wrong_letters_display.pack()
+        self.create_widgets()
+        self.new_game()
 
-word_display = tk.Label(root, text="", font=("Arial", 20))
-word_display.pack(pady=20)
+    def create_widgets(self):
+        self.hangman_image = tk.Label(self.root)
+        self.hangman_image.pack()
 
-entry = tk.Entry(root, font=("Arial", 14))
-entry.pack()
+        self.word_display = tk.Label(self.root, text="", font=("Arial", 20))
+        self.word_display.pack(pady=20)
 
-guess_button = tk.Button(root, text="Gissa", command=guess_letter)
-guess_button.pack(pady=10)
+        self.entry = tk.Entry(self.root, font=("Arial", 14))
+        self.entry.pack()
 
-attempts_label = tk.Label(root, text="", font=("Arial", 14))
-attempts_label.pack()
+        self.guess_button = tk.Button(self.root, text="Gissa", command=self.guess_letter)
+        self.guess_button.pack(pady=10)
 
-new_game_button = tk.Button(root, text="Nytt spel", command=new_game)
-new_game_button.pack(pady=10)
+        self.attempts_label = tk.Label(self.root, text="", font=("Arial", 14))
+        self.attempts_label.pack()
 
-new_game()
-root.mainloop()
+        self.new_game_button = tk.Button(self.root, text="Nytt spel", command=self.new_game)
+        self.new_game_button.pack(pady=10)
+
+    def new_game(self):
+        if not self.game.reset_game():
+            return
+        self.update_display()
+
+    def guess_letter(self):
+        letter = self.entry.get().upper()
+        self.entry.delete(0, tk.END)
+
+        result = self.game.guess(letter)
+        if result == "Fel format":
+            messagebox.showwarning("Fel", "Ange en enda bokstav.")
+        elif result == "Redan gissat":
+            messagebox.showinfo("Info", "Du har redan gissat den bokstaven.")
+        self.update_display()
+        self.check_game_over()
+
+    def update_display(self):
+        self.word_display.config(text=self.game.get_display_word())
+        self.attempts_label.config(text=f"Försök kvar: {self.game.attempts}")
+        self.update_hangman_image()
+
+    def update_hangman_image(self):
+        index = min(16 - self.game.attempts, len(self.hangman_images) - 1)
+        scaled_image = self.hangman_images[index]
+        self.hangman_image.config(image=scaled_image)
+        self.hangman_image.image = scaled_image
+
+    def check_game_over(self):
+        if self.game.is_won():
+            messagebox.showinfo("Grattis!", f"Du vann! Ordet var: {self.game.word}")
+            self.game.save_score(1)
+            self.new_game()
+        elif self.game.is_lost():
+            messagebox.showinfo("Game Over", f"Du förlorade! Ordet var: {self.game.word}")
+            self.game.save_score(0)
+            self.new_game()
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = HangmanGUI(root)
+    root.mainloop()
