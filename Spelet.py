@@ -24,9 +24,11 @@ class HangmanGame:
         with open(self.score_file, 'a', encoding='utf-8') as file:
             file.write(f"{score}\n")
 
-    def reset_game(self):
-        # Startar ett nytt spel
+    def reset_game(self, word_length=None):
+        # Startar ett nytt speld
         words = self.load_words()
+        if word_length:
+            words = [w for w in words if len(w) == word_length]
         if not words:
             self.word = ""
             return False
@@ -35,7 +37,7 @@ class HangmanGame:
         self.correct_letters = set(self.word)
         self.attempts = 16
         return True
-
+    
     def guess(self, letter):
         # Hanterar en gissning
         letter = letter.upper()
@@ -78,6 +80,7 @@ class HangmanGUI:
         ]
 
         self.create_widgets()
+        self.alphabet_labels = {}
         self.new_game()
 
     def create_widgets(self):
@@ -100,11 +103,41 @@ class HangmanGUI:
         self.new_game_button = tk.Button(self.root, text="Nytt spel", command=self.new_game)
         self.new_game_button.pack(pady=10)
 
+        self.length_label = tk.Label(self.root, text="Välj ordlängd (1–18):", font=("Arial", 12))
+        self.length_label.pack()
+
+        self.length_var = tk.IntVar(value=5)
+        self.length_spinbox = tk.Spinbox(self.root, from_=1, to=18, textvariable=self.length_var, font=("Arial", 12), width=5)
+        self.length_spinbox.pack(pady=5)
+
+        self.random_button = tk.Button(text="Slumpa längd", font=("Arial", 10), command=self.set_random_length)
+        self.random_button.pack(pady=5)
+
+        self.alphabet_frame = tk.Frame(self.root)
+        self.alphabet_frame.pack(pady=10)
+        self.alphabet_labels = {}
+        
+        alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        for i, letter in enumerate(alphabet):
+            label = tk.Label(self.alphabet_frame, text=letter, font=("Arial", 12), width=2, borderwidth=1, relief="solid")
+            label.grid(row=i // 13, column=i % 13, padx=2, pady=2)
+            self.alphabet_labels[letter] = label
+
     def new_game(self):
         # Startar nytt spel och uppdaterar GUI
-        if not self.game.reset_game():
+        word_length = self.length_var.get()
+        if not self.game.reset_game(word_length):
+            messagebox.showerror("Fel", f"Inga ord hittades med {word_length} bokstäver.")
             return
         self.update_display()
+        for label in self.alphabet_labels.values():
+            label.config(fg="black")
+
+        
+    def set_random_length(self):
+        # Random antal bokstäver
+        random_length = random.randint(1, 18)
+        self.length_var.set(random_length)
 
     def guess_letter(self):
         # Hanterar när spelaren klickar på "Gissa"
@@ -124,6 +157,15 @@ class HangmanGUI:
         self.word_display.config(text=self.game.get_display_word())
         self.attempts_label.config(text=f"Försök kvar: {self.game.attempts}")
         self.update_hangman_image()
+        self.update_alphabet()    
+
+    def update_alphabet(self):
+        # Uppdaterar vilka bokstäver som har använts 
+        for letter, label in self.alphabet_labels.items():
+            if letter in self.game.guessed_letters:
+                label.config(fg="light gray")
+            else:
+                label.config(fg="black")
 
     def update_hangman_image(self):
         # Uppdaterar bilden för hängda gubben
