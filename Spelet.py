@@ -76,11 +76,10 @@ class HangmanGUI:
         self.game = HangmanGame()
         # Laddar in bilder för gubben
         self.hangman_images = [
-            tk.PhotoImage(file=f"hangman{i}.png").subsample(2, 2) for i in range(17)
+            tk.PhotoImage(file=f"hangman{i}.png").subsample(3, 3) for i in range(17)
         ]
 
         self.create_widgets()
-        self.alphabet_labels = {}
         self.new_game()
 
     def create_widgets(self):
@@ -117,11 +116,13 @@ class HangmanGUI:
         self.alphabet_frame.pack(pady=10)
         self.alphabet_labels = {}
         
+        
         alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         for i, letter in enumerate(alphabet):
             label = tk.Label(self.alphabet_frame, text=letter, font=("Arial", 12), width=2, borderwidth=1, relief="solid")
             label.grid(row=i // 13, column=i % 13, padx=2, pady=2)
             self.alphabet_labels[letter] = label
+
 
     def new_game(self):
         # Startar nytt spel och uppdaterar GUI
@@ -163,9 +164,9 @@ class HangmanGUI:
         # Uppdaterar vilka bokstäver som har använts 
         for letter, label in self.alphabet_labels.items():
             if letter in self.game.guessed_letters:
-                label.config(fg="light gray")
+                label.config(fg="red")
             else:
-                label.config(fg="black")
+                label.config(fg="green")
 
     def update_hangman_image(self):
         # Uppdaterar bilden för hängda gubben
